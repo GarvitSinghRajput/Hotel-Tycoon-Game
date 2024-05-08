@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using DG.Tweening;
 
 public class RoomManager : MonoBehaviour
 {
@@ -13,11 +14,15 @@ public class RoomManager : MonoBehaviour
     public RoomManager nextRoomToUnlock;
     public Transform navPosition;
     public TextMeshPro priceText;
+    public List<Transform> tipCoinPosition;
+    public GameObject hideRoomLight;
+
+    private bool isUnlocking = false;
     private int unlockCost;
 
     private void Start()
     {
-        actionPoint.timeToFinish = 2.5f;
+        actionPoint.timeToFinish = 3.5f;
         unlockCost = (int)roomType * 100 + 100;
         priceText.SetText(unlockCost.ToString());
     }
@@ -25,6 +30,18 @@ public class RoomManager : MonoBehaviour
     private void OnEnable()
     {
         actionPoint.action = UnlockRoom;
+    }
+
+    private void Update()
+    {
+        if (isUnlocking)
+        {
+            float money = Mathf.Lerp(0, unlockCost, actionPoint.timeToFinish);
+            money = Mathf.RoundToInt(money);
+            priceText.text = money.ToString();
+        }
+        else
+            priceText.text = unlockCost.ToString();
     }
 
     private void UnlockRoom()
@@ -38,8 +55,7 @@ public class RoomManager : MonoBehaviour
             CanNotBuy();
         while(actionPoint.timeToFinish > 0)
         {
-            // Deduct Money Code
-
+            isUnlocking = true;
             actionPoint.timeToFinish -= Time.deltaTime;
             yield return true;
         }
@@ -50,7 +66,7 @@ public class RoomManager : MonoBehaviour
         PlayerManager.Instance.animator.SetBool(Global.RunAnim, true);
         if (nextRoomToUnlock != null)
             nextRoomToUnlock.actionPoint.gameObject.SetActive(true);
-
+        isUnlocking = false;
         PlayerPrefs.SetInt(Global.ROOM + (int)roomType, 1);
     }
 
@@ -60,16 +76,21 @@ public class RoomManager : MonoBehaviour
         StopAllCoroutines();
     }
 
-    public void UpdateRoom()
+    public void UnlockRoomData()
     {
         LockedGO.SetActive(false);
         actionPoint.gameObject.SetActive(false);
         if (nextRoomToUnlock != null)
             nextRoomToUnlock.actionPoint.gameObject.SetActive(true);
     }
+
+    public void LockRoomData()
+    {
+        LockedGO.SetActive(true);
+    }
 }
 
 public class RoomData
 {
-    public enum RoomType {LeftDown, RightDown, LeftUp, RightUp}    
+    public enum RoomType {LeftDown, RightDown, LeftUp, RightUp, LeftTop, RightTop}    
 }

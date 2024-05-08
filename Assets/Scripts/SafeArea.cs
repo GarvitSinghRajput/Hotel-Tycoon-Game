@@ -12,6 +12,7 @@ public class SafeArea : MonoBehaviour
 
     private void Awake()
     {
+        Application.targetFrameRate = 60;
         ApplyAgain();
         Invoke("ApplyAgain", 2f);
     }

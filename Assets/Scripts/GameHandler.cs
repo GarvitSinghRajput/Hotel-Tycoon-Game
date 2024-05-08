@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 public class GameHandler : MonoBehaviour
 {
@@ -11,16 +12,20 @@ public class GameHandler : MonoBehaviour
     public static int CoinCount;
 
     public Transform coinPanelPostition;
-    public TextMeshProUGUI coinText;
+    public Text Text;
     public Transform objectHolder;
     public GameObject insufficientMoneyUI;
     public GameObject coinPrefab;
-    public Transform MoneyArea;
     public ActionPoint receptionPoint;
     public List<RoomManager> roomList;
     public GameObject guestPrefab;
-    public float timeForAddNewGuest = 2f;
+    public float timeForAddNewGuest = 1f;
+    public Transform exitTranform;
+    public List<Transform> resCoinPosition;
 
+
+    private int resPosIndex = 0;
+    private int tipPosIndex = 0;
     private float timeCounter = 0;
     private WaitingQueue waitingQueue;
 
@@ -33,15 +38,20 @@ public class GameHandler : MonoBehaviour
 
         receptionPoint.action = StandingOnReception;
         CoinCount = PlayerPrefs.GetInt(Global.PP_COINS);
-        if (CoinCount == 0)
+        if (CoinCount <= 0)
             CoinCount = 500;
         UpdateCoinCount(0);
-        CheckRoomPreviousData();
+        CheckRoomPreviousData();        
     }
 
-    private void OnDestroy()
+    private void OnDisable()
     {
         PlayerPrefs.SetInt(Global.PP_COINS,CoinCount);
+    }
+
+    private void OnApplicationPause()
+    {
+        PlayerPrefs.SetInt(Global.PP_COINS, CoinCount);
     }
 
     // Start is called before the first frame update
@@ -49,12 +59,13 @@ public class GameHandler : MonoBehaviour
     {
         List<Vector3> waitingQueuePositionList = new List<Vector3>();
         Vector3 firstPosition = new Vector3(0, 0, -3f);
-        float positionSize = 1f;
+        float positionSize = 1.5f;
         for (int i = 0; i < 5; i++)
         {
-            waitingQueuePositionList.Add(firstPosition + new Vector3(0, 0, -1) * positionSize * i);
+            waitingQueuePositionList.Add(firstPosition + new Vector3(0, 0, -1f) * positionSize * i);
         }
         waitingQueue = new WaitingQueue(waitingQueuePositionList);
+        waitingQueue.OnGuestArrivedAtFirstOfQueue += OnGuestArrivedAtFirstOfQueue;
     }
 
     // Update is called once per frame
@@ -75,6 +86,11 @@ public class GameHandler : MonoBehaviour
         }
     }
 
+    private void OnGuestArrivedAtFirstOfQueue(object sender, System.EventArgs e)
+    {
+        
+    }
+
     private void StandingOnReception()
     {
         RoomManager roomManager = IsRoomAvailable();
@@ -82,9 +98,43 @@ public class GameHandler : MonoBehaviour
             return;
 
         Guest guest = waitingQueue.GetFirstInQueue();
-        guest.MoveTo(roomManager.navPosition.position);
+        guest.MoveTo(roomManager.navPosition.position, () => { StartCoroutine(ReachedInsideRoom(guest, roomManager)); });
         roomManager.isBooked = true;
-        SpawnMoneyReservation(guest.transform.position);
+        SpawnMoney(guest.transform.position + new Vector3(0, 0, 0), resCoinPosition[resPosIndex].position, 50);
+        resPosIndex++;
+        if (resPosIndex >= resCoinPosition.Count)
+            resPosIndex = 0;
+    }
+    
+    IEnumerator ReachedInsideRoom(Guest guest, RoomManager roomManager)
+    {
+        roomManager.hideRoomLight.SetActive(true);
+        Vector3 pos = roomManager.furnitureAssets[0].transform.position;
+        pos.y = 1f;
+        guest.MoveTo(pos, () => 
+        {
+            guest.animator.SetBool(Global.RunAnim, false);
+            guest.animator.SetBool(Global.LayAnim, true);
+        });
+
+        yield return new WaitForSeconds(3f);
+
+        guest.MoveTo(roomManager.navPosition.position, () => 
+        {
+            guest.animator.SetBool(Global.LayAnim, false);
+            guest.animator.SetBool(Global.RunAnim, true);
+            SpawnMoney(guest.transform.position, roomManager.tipCoinPosition[tipPosIndex].position, Random.Range(10, 40));
+            roomManager.isBooked = false;
+            tipPosIndex++;
+            if (tipPosIndex >= roomManager.tipCoinPosition.Count)
+                tipPosIndex = 0;
+            guest.MoveTo(exitTranform.position, () =>
+            {
+                Destroy(guest.gameObject);
+            });
+            roomManager.hideRoomLight.SetActive(false);
+        });
+
     }
 
     private RoomManager IsRoomAvailable()
@@ -97,23 +147,25 @@ public class GameHandler : MonoBehaviour
         return null;
     }
 
-    private void SpawnMoneyReservation(Vector3 pos)
+    private void SpawnMoney(Vector3 pos, Vector3 movePos, int value)
     {
-        SpawnMoney(pos, 50);
-    }
-
-    private void SpawnMoney(Vector3 pos, int value)
-    {
-        GameObject go = Instantiate(coinPrefab, MoneyArea.position, Quaternion.identity);
-        //go.transform.Translate(MoneyArea.position,Space.Self);
+        GameObject go = Instantiate(coinPrefab, pos, Quaternion.identity);
+        go.transform.DOMove(movePos, 0.75f).SetEase(Ease.OutSine);
         MoneyHandler moneyHandler = go.GetComponent<MoneyHandler>();
         moneyHandler.coinValue = value;
+    }
+
+    public MoneyHandler SpawnMoney(Vector3 pos)
+    {
+        GameObject go = Instantiate(coinPrefab, pos, Quaternion.identity);
+        MoneyHandler moneyHandler = go.GetComponent<MoneyHandler>();
+        return moneyHandler;
     }
 
     public void UpdateCoinCount(int value)
     {
         CoinCount += value;
-        coinText.SetText(CoinCount.ToString());
+        Text.DOText(CoinCount.ToString(), 2f, scrambleMode: ScrambleMode.Numerals);
     }
 
     public void ActivateBrokeUI()
@@ -134,7 +186,11 @@ public class GameHandler : MonoBehaviour
             int value = PlayerPrefs.GetInt(Global.ROOM + i);
             if (value == 1)
             {
-                roomList[i].UpdateRoom();
+                roomList[i].UnlockRoomData();
+            }
+            else
+            {
+                roomList[i].LockRoomData();
             }
         }
     }

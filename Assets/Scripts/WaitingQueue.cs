@@ -1,16 +1,19 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class WaitingQueue : MonoBehaviour
 {
+    public event EventHandler OnGuestAdded;
+    public event EventHandler OnGuestArrivedAtFirstOfQueue;
     private List<Guest> guestList;
     private List<Vector3> positionList;
     private Vector3 entrancePosition;
     public WaitingQueue(List<Vector3> positionList)
     {
         this.positionList = positionList;
-        entrancePosition = positionList[positionList.Count - 1] + new Vector3(0, 0, -1);
+        entrancePosition = positionList[positionList.Count - 1] + new Vector3(0, 0, -1f);
 
         guestList = new List<Guest>();
     }
@@ -26,6 +29,7 @@ public class WaitingQueue : MonoBehaviour
         guest.MoveTo(entrancePosition, () => {
             guest.MoveTo(positionList[guestList.IndexOf(guest)], () => { GuestArrivedAtQueuePosition(guest); });
         });
+        if (OnGuestAdded != null) OnGuestAdded(this, EventArgs.Empty);
     }
 
     public Guest GetFirstInQueue()
@@ -54,6 +58,11 @@ public class WaitingQueue : MonoBehaviour
 
     private void GuestArrivedAtQueuePosition(Guest guest)
     {
-
+        guest.animator.SetBool(Global.RunAnim, false);
+        if(guest == guestList[0])
+        {
+            if (OnGuestArrivedAtFirstOfQueue != null)
+                OnGuestArrivedAtFirstOfQueue(this, EventArgs.Empty);
+        }
     }
 }

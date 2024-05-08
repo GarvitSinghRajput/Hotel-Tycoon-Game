@@ -11,7 +11,7 @@ public class ActionPoint : MonoBehaviour
     public Global.Tags actionType;
     public Action action;
     public bool isReceptionPoint;
-    private float waitingTime = 2f;
+    private float actionWaitingTime = 3f;
  
     private void OnTriggerEnter(Collider other)
     {
@@ -29,13 +29,13 @@ public class ActionPoint : MonoBehaviour
         {
             if (isReceptionPoint)
             {
-                if (waitingTime <= 0)
+                if (actionWaitingTime <= 0)
                 {
                     action?.Invoke();
-                    waitingTime = 2f;
+                    actionWaitingTime = 3f;
                 }
                 else
-                    waitingTime -= Time.deltaTime;
+                    actionWaitingTime -= Time.deltaTime;
             }
         }
     }
@@ -44,10 +44,13 @@ public class ActionPoint : MonoBehaviour
     {
         if (other.gameObject.tag == actionType.ToString())
         {
+            if (coroutine != null)
+            {
+                StopCoroutine(coroutine);
+                timeToFinish = 3.5f;
+            }
             PlayerManager.Instance.animator.SetBool(Global.InteractAnim, false);
             PlayerManager.Instance.animator.SetBool(Global.RunAnim, true);
-            if (coroutine != null)
-                StopCoroutine(coroutine);
         }
     }
 }

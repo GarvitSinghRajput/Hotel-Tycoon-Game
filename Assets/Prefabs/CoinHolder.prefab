@@ -63,6 +63,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   coinValue: 0
   rotateCoin: {fileID: 7501290363889762769}
+  coinMoverUI: {fileID: 4453228995013562365, guid: 9025c6b7e8900d7419089dd4ad001745, type: 3}
+  coinUIParent: {fileID: 0}
 --- !u!65 &4869187073579461900
 BoxCollider:
   m_ObjectHideFlags: 0
