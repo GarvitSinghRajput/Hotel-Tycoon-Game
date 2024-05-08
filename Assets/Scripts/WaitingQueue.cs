@@ -12,12 +12,6 @@ public class WaitingQueue : MonoBehaviour
         this.positionList = positionList;
         entrancePosition = positionList[positionList.Count - 1] + new Vector3(0, 0, -1);
 
-        //for (int i = 0; i < positionList.Count; i++)
-        //{
-        //    Debug.LogError(positionList[i]);
-        //}
-        //Debug.LogError(entrancePosition);
-
         guestList = new List<Guest>();
     }
 
@@ -30,7 +24,7 @@ public class WaitingQueue : MonoBehaviour
     {
         guestList.Add(guest);
         guest.MoveTo(entrancePosition, () => {
-            guest.MoveTo(positionList[guestList.IndexOf(guest)]);
+            guest.MoveTo(positionList[guestList.IndexOf(guest)], () => { GuestArrivedAtQueuePosition(guest); });
         });
     }
 
@@ -53,7 +47,13 @@ public class WaitingQueue : MonoBehaviour
     {
         for (int i = 0; i < guestList.Count; i++)
         {
-            guestList[i].MoveTo(positionList[i]);
+            Guest guest = guestList[i];
+            guest.MoveTo(positionList[i], () => { GuestArrivedAtQueuePosition(guest); });
         }
+    }
+
+    private void GuestArrivedAtQueuePosition(Guest guest)
+    {
+
     }
 }

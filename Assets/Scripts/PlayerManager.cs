@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class PlayerManager : MonoBehaviour
 {
+    public static PlayerManager Instance;
     public float movespeed;
     public FixedJoystick joystick;
     public Rigidbody _rigidbody;
@@ -14,18 +15,18 @@ public class PlayerManager : MonoBehaviour
     private Vector3 direction;
     private Camera cam;
 
+    private void Awake()
+    {
+        if (Instance == null)
+            Instance = this;
+        else
+            return;
+    }
+
     private void Start()
     {
         cam = Camera.main;
     }
-
-    //private void Update()
-    //{
-    //    var pos = transform.position;
-    //    pos.x = Mathf.Clamp(pos.x, minimumXZ.x, maximumXZ.x);
-    //    pos.z = Mathf.Clamp(pos.z, minimumXZ.y, maximumXZ.y);
-    //    transform.position = pos;
-    //}
 
     private void FixedUpdate()
     {
@@ -33,11 +34,11 @@ public class PlayerManager : MonoBehaviour
         if (joystick.Horizontal != 0 || joystick.Vertical != 0)
         {
             transform.rotation = Quaternion.LookRotation(-_rigidbody.velocity);
-            animator.SetBool("Run", true);
+            animator.SetBool(Global.RunAnim, true);
         }
         else
         {
-            animator.SetBool("Run", false);
+            animator.SetBool(Global.RunAnim, false);
         }
     }
 
