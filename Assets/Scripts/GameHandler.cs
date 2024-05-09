@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
+using UnityEngine.SceneManagement;
 
 public class GameHandler : MonoBehaviour
 {
@@ -12,7 +13,7 @@ public class GameHandler : MonoBehaviour
     public static int CoinCount;
 
     public Transform coinPanelPostition;
-    public Text Text;
+    public Text coinCountText;
     public Transform objectHolder;
     public GameObject insufficientMoneyUI;
     public GameObject coinPrefab;
@@ -40,13 +41,8 @@ public class GameHandler : MonoBehaviour
         CoinCount = PlayerPrefs.GetInt(Global.PP_COINS);
         if (CoinCount <= 0)
             CoinCount = 500;
-        UpdateCoinCount(0);
+        coinCountText.text = CoinCount.ToString();
         CheckRoomPreviousData();        
-    }
-
-    private void OnDisable()
-    {
-        PlayerPrefs.SetInt(Global.PP_COINS,CoinCount);
     }
 
     private void OnApplicationPause()
@@ -165,7 +161,7 @@ public class GameHandler : MonoBehaviour
     public void UpdateCoinCount(int value)
     {
         CoinCount += value;
-        Text.DOText(CoinCount.ToString(), 2f, scrambleMode: ScrambleMode.Numerals);
+        coinCountText.DOText(CoinCount.ToString(), 2f, scrambleMode: ScrambleMode.Numerals);
     }
 
     public void ActivateBrokeUI()
@@ -193,5 +189,16 @@ public class GameHandler : MonoBehaviour
                 roomList[i].LockRoomData();
             }
         }
+    }
+
+    public void ResetPlayerData()
+    {
+        PlayerPrefs.DeleteAll();
+        Invoke("ReloadScene", 0.3f);
+    }
+
+    public void ReloadScene()
+    {
+        SceneManager.LoadScene(0);
     }
 }
